@@ -21,7 +21,7 @@ const findUserByUsername = async (username) => {
 const countUsers = async (username) => {
   const db = getDB();
   const row = await db.get('SELECT COUNT(*) as count FROM users WHERE username = ?', [username]);
-  return row.count;
+  return row ? row.count : 0;
 };
 
 const matchPassword = async (enteredPassword, storedPassword) => {

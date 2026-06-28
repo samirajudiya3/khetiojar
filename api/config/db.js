@@ -8,15 +8,19 @@ const connectDB = async () => {
   if (dbInstance) {
     return dbInstance;
   }
-
+  
   try {
-    const dbPath = path.join(__dirname, '../../database.sqlite');
+    const dbPath = process.env.RENDER_DISK_PATH 
+      ? path.join(process.env.RENDER_DISK_PATH, 'database.sqlite')
+      : path.join(__dirname, '../../database.sqlite');
+      
     dbInstance = await open({
       filename: dbPath,
       driver: sqlite3.Database
     });
     
-    console.log('Successfully connected to local SQLite database.');
+    // Enable foreign keys
+    await dbInstance.run('PRAGMA foreign_keys = ON');
 
     // Create Tables
     await dbInstance.exec(`
@@ -35,9 +39,10 @@ const connectDB = async () => {
       );
     `);
 
+    console.log('Successfully connected to local SQLite database (database.sqlite).');
     return dbInstance;
   } catch (error) {
-    console.error('Error connecting to SQLite database:', error.message);
+    console.error('Error connecting to local SQLite database:', error.message);
     throw error;
   }
 };

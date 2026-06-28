@@ -1,12 +1,13 @@
-const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
-const { connectDB } = require('./config/db');
-const User = require('./models/User');
 
 // Load environment variables from .env if present (using absolute path and override system envs for consistency)
 dotenv.config({ path: path.join(__dirname, '../.env'), override: true });
+
+const express = require('express');
+const cors = require('cors');
+const { connectDB } = require('./config/db');
+const User = require('./models/User');
 
 const app = express();
 
