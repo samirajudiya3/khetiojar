@@ -1,27 +1,29 @@
 const { getDB } = require('../config/db');
 
 const saveSale = async (dateStr, entriesStr, grandTotal) => {
-  const db = getDB();
-  const result = await db.run(`
-    INSERT INTO sales (date, entries, grandTotal) 
-    VALUES (?, ?, ?)
+  const pool = getDB();
+  const result = await pool.query(`
+    INSERT INTO sales (date, entries, "grandTotal") 
+    VALUES ($1, $2, $3)
     ON CONFLICT(date) DO UPDATE SET 
-      entries = excluded.entries,
-      grandTotal = excluded.grandTotal,
-      createdAt = CURRENT_TIMESTAMP
+      entries = EXCLUDED.entries,
+      "grandTotal" = EXCLUDED."grandTotal",
+      "createdAt" = CURRENT_TIMESTAMP
+    RETURNING *
   `, [dateStr, entriesStr, grandTotal]);
-  return result;
+  return result.rows[0];
 };
 
 const findSaleByDate = async (dateStr) => {
-  const db = getDB();
-  return await db.get('SELECT * FROM sales WHERE date = ?', [dateStr]);
+  const pool = getDB();
+  const result = await pool.query('SELECT * FROM sales WHERE date = $1', [dateStr]);
+  return result.rows[0];
 };
 
 const deleteSaleById = async (id) => {
-  const db = getDB();
-  const result = await db.run('DELETE FROM sales WHERE id = ?', [id]);
-  return result;
+  const pool = getDB();
+  const result = await pool.query('DELETE FROM sales WHERE id = $1', [id]);
+  return result.rowCount;
 };
 
 module.exports = {

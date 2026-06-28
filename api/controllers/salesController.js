@@ -10,7 +10,7 @@ const normalizeToUTCMidnight = (dateStr) => {
 
 const getDashboardStats = async (req, res) => {
   try {
-    const db = getDB();
+    const pool = getDB();
     const todayParam = req.query.today;
     const clientToday = todayParam ? new Date(todayParam) : new Date();
 
@@ -19,28 +19,45 @@ const getDashboardStats = async (req, res) => {
     const startOfMonth = new Date(Date.UTC(clientToday.getFullYear(), clientToday.getMonth(), 1, 0, 0, 0, 0)).toISOString();
     const endOfMonth = new Date(Date.UTC(clientToday.getFullYear(), clientToday.getMonth() + 1, 0, 0, 0, 0, 0)).toISOString();
 
-    const todaySaleDoc = await db.get('SELECT * FROM sales WHERE date = ?', [todayStart]);
+    const todaySaleDocResult = await pool.query('SELECT * FROM sales WHERE date = $1', [todayStart]);
+    const todaySaleDoc = todaySaleDocResult.rows[0];
     const todaySalesTotal = todaySaleDoc ? todaySaleDoc.grandTotal : 0;
 
-    const monthRow = await db.get('SELECT SUM(grandTotal) as total FROM sales WHERE date >= ? AND date <= ?', [startOfMonth, endOfMonth]);
+    const monthRowResult = await pool.query('SELECT SUM("grandTotal") as total FROM sales WHERE date >= $1 AND date <= $2', [startOfMonth, endOfMonth]);
+    const monthRow = monthRowResult.rows[0];
     const monthSalesTotal = monthRow && monthRow.total ? monthRow.total : 0;
 
-    const countRow = await db.get('SELECT COUNT(*) as count FROM sales');
+    const countRowResult = await pool.query('SELECT COUNT(*) as count FROM sales');
+    const countRow = countRowResult.rows[0];
     const totalRecords = countRow.count;
 
-    const recentRows = await db.all('SELECT * FROM sales ORDER BY date DESC LIMIT 5');
+    const recentRowsResult = await pool.query(`
+      SELECT s.*, (SELECT SUM(amount) FROM expenses e WHERE e.date = s.date) as "dailyExpense"
+      FROM sales s 
+      ORDER BY s.date DESC 
+      LIMIT 5
+    `);
+    const recentRows = recentRowsResult.rows;
     const recentEntries = recentRows.map(row => ({
       _id: row.id,
       date: row.date,
       entries: JSON.parse(row.entries),
-      grandTotal: row.grandTotal
+      grandTotal: row.grandTotal,
+      dailyExpense: row.dailyExpense || 0
     }));
+
+    const startOfMonthStr = startOfMonth.split('T')[0];
+    const endOfMonthStr = endOfMonth.split('T')[0];
+    const monthExpenseRowResult = await pool.query('SELECT SUM(amount) as total FROM expenses WHERE date >= $1 AND date <= $2', [startOfMonthStr, endOfMonthStr]);
+    const monthExpenseRow = monthExpenseRowResult.rows[0];
+    const monthExpensesTotal = monthExpenseRow && monthExpenseRow.total ? monthExpenseRow.total : 0;
 
     res.json({
       success: true,
       data: {
         todaySalesTotal,
         monthSalesTotal,
+        monthExpensesTotal,
         totalRecords,
         recentEntries
       }
@@ -93,8 +110,9 @@ const saveSale = async (req, res) => {
     await Sale.saveSale(targetDate, entriesStr, grandTotal);
     
     // Fetch newly saved to return
-    const db = getDB();
-    const saved = await db.get('SELECT * FROM sales WHERE date = ?', [targetDate]);
+    const pool = getDB();
+    const savedResult = await pool.query('SELECT * FROM sales WHERE date = $1', [targetDate]);
+    const saved = savedResult.rows[0];
 
     res.status(201).json({
       success: true,
@@ -146,29 +164,30 @@ const getSales = async (req, res) => {
   const { date, startDate, endDate } = req.query;
 
   try {
-    const db = getDB();
+    const pool = getDB();
     let query = 'SELECT * FROM sales';
     const params = [];
 
     if (date) {
-      query += ' WHERE date = ?';
+      query += ' WHERE date = $1';
       params.push(normalizeToUTCMidnight(date).toISOString());
     } else if (startDate || endDate) {
       const conditions = [];
       if (startDate) {
-        conditions.push('date >= ?');
         params.push(normalizeToUTCMidnight(startDate).toISOString());
+        conditions.push(`date >= $${params.length}`);
       }
       if (endDate) {
-        conditions.push('date <= ?');
         params.push(normalizeToUTCMidnight(endDate).toISOString());
+        conditions.push(`date <= $${params.length}`);
       }
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
     query += ' ORDER BY date DESC';
 
-    const rows = await db.all(query, params);
+    const rowsResult = await pool.query(query, params);
+    const rows = rowsResult.rows;
     
     const salesList = rows.map(row => ({
       _id: row.id,
@@ -189,10 +208,11 @@ const getSales = async (req, res) => {
 
 const deleteSale = async (req, res) => {
   try {
-    const db = getDB();
+    const pool = getDB();
     const id = req.params.id;
     
-    const saleDoc = await db.get('SELECT * FROM sales WHERE id = ?', [id]);
+    const saleDocResult = await pool.query('SELECT * FROM sales WHERE id = $1', [id]);
+    const saleDoc = saleDocResult.rows[0];
 
     if (!saleDoc) {
       return res.status(404).json({ success: false, message: 'Sales record not found' });

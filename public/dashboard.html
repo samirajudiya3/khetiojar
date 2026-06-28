@@ -39,6 +39,12 @@
           <span>History Log</span>
         </a>
       </li>
+      <li class="sidebar-item">
+        <a href="/expenses.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <span>Expenses</span>
+        </a>
+      </li>
     </ul>
 
     <div class="sidebar-footer">
@@ -101,6 +107,17 @@
           </div>
         </div>
 
+        <!-- This Month Expenses -->
+        <div class="metric-card">
+          <div class="metric-icon red" style="background-color: var(--accent-red-soft); color: var(--accent-red);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"></path></svg>
+          </div>
+          <div class="metric-content">
+            <span class="metric-title">This Month Expenses</span>
+            <span id="monthExpensesVal" class="metric-value shimmer-text shimmer" style="color: var(--accent-red);"></span>
+          </div>
+        </div>
+
         <!-- Total Daily Records -->
         <div class="metric-card">
           <div class="metric-icon purple">
@@ -129,6 +146,7 @@
                   <th>Date</th>
                   <th>Entries Overview</th>
                   <th>Grand Total</th>
+                  <th>Daily Expense</th>
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>

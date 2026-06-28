@@ -56,6 +56,7 @@ async function loadDashboardData() {
 function renderMetrics(data) {
   const todayValEl = document.getElementById('todaySalesVal');
   const monthValEl = document.getElementById('monthSalesVal');
+  const monthExpValEl = document.getElementById('monthExpensesVal');
   const totalValEl = document.getElementById('totalRecordsVal');
 
   // Today's Sales
@@ -65,6 +66,12 @@ function renderMetrics(data) {
   // Month's Sales
   monthValEl.textContent = formatCurrency(data.monthSalesTotal);
   monthValEl.classList.remove('shimmer', 'shimmer-text');
+
+  // Month's Expenses
+  if (monthExpValEl) {
+    monthExpValEl.textContent = formatCurrency(data.monthExpensesTotal || 0);
+    monthExpValEl.classList.remove('shimmer', 'shimmer-text');
+  }
 
   // Total Records
   totalValEl.textContent = data.totalRecords.toLocaleString('en-IN');
@@ -111,6 +118,8 @@ function renderRecentTable(entries) {
 
     const dateQuery = getUTCDateString(record.date);
 
+    const expenseDisplay = record.dailyExpense > 0 ? formatCurrency(record.dailyExpense) : '-';
+
     row.innerHTML = `
       <td style="font-weight: 700;">${formatHumanDate(record.date)}</td>
       <td>
@@ -119,6 +128,7 @@ function renderRecentTable(entries) {
         </div>
       </td>
       <td style="font-weight: 800; color: var(--accent-green);">${formatCurrency(record.grandTotal)}</td>
+      <td style="font-weight: 600; color: var(--accent-red);">${expenseDisplay}</td>
       <td style="text-align: right;">
         <a href="/add-sales.html?date=${dateQuery}" class="btn btn-secondary btn-icon-only" title="Edit sales for this day" style="display:inline-flex; align-items:center; justify-content:center;">
           <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>

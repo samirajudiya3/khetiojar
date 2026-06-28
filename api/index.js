@@ -52,6 +52,7 @@ connectDB()
 // Route handlers
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/sales', require('./routes/sales'));
+app.use('/api/expenses', require('./routes/expenses'));
 
 // Serve frontend assets statically in local developer environment
 app.use(express.static(path.join(__dirname, '../public')));

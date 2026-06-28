@@ -1,57 +1,64 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
+const { Pool } = require('pg');
 
-let dbInstance = null;
+let pool = null;
 
 const connectDB = async () => {
-  if (dbInstance) {
-    return dbInstance;
+  if (pool) {
+    return pool;
   }
   
   try {
-    const dbPath = process.env.RENDER_DISK_PATH 
-      ? path.join(process.env.RENDER_DISK_PATH, 'database.sqlite')
-      : path.join(__dirname, '../../database.sqlite');
-      
-    dbInstance = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not defined.');
+    }
+
+    pool = new Pool({
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     
-    // Enable foreign keys
-    await dbInstance.run('PRAGMA foreign_keys = ON');
-
-    // Create Tables
-    await dbInstance.exec(`
+    // Create Tables using Postgres syntax
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      
       CREATE TABLE IF NOT EXISTS sales (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         date TEXT UNIQUE NOT NULL,
         entries TEXT NOT NULL,
-        grandTotal REAL NOT NULL DEFAULT 0,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        "grandTotal" REAL NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        date TEXT NOT NULL,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    console.log('Successfully connected to local SQLite database (database.sqlite).');
-    return dbInstance;
+    console.log('Successfully connected to Postgres database.');
+    return pool;
   } catch (error) {
-    console.error('Error connecting to local SQLite database:', error.message);
+    console.error('Error connecting to Postgres database:', error.message);
     throw error;
   }
 };
 
 const getDB = () => {
-  if (!dbInstance) {
+  if (!pool) {
     throw new Error('Database not initialized.');
   }
-  return dbInstance;
+  return pool;
 };
 
 module.exports = { connectDB, getDB };
