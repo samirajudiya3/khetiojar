@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Khetiojar Sales Tracker</title>
+  <meta name="description" content="Secure portal to record daily sales and review analytics logs.">
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Inject auth check early to avoid flashing authenticated pages -->
+  <script src="/js/auth.js"></script>
+</head>
+<body class="login-body">
+
+  <!-- Floating Theme Toggle -->
+  <div class="login-theme-toggle">
+    <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle theme">
+      <!-- Moon Icon (Dark Mode toggle) -->
+      <svg class="moon-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <!-- Sun Icon (Light Mode toggle) -->
+      <svg class="sun-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <!-- Sprout Icon -->
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v-.07zm5.9-4.8c-.2.5-.5.9-.9 1.3L15 11.5V9c0-.55-.45-1-1-1h-3V6h3c1.1 0 2-.9 2-2V3.41c2.93.98 5 3.75 5 6.96 0 1.25-.32 2.43-.9 3.56z" fill="currentColor"/>
+        </svg>
+      </div>
+      <h2>Khetiojar</h2>
+      <p>Agricultural Tools Sales Tracker</p>
+    </div>
+
+    <form id="loginForm" class="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" class="form-input" placeholder="Enter administrator username" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Enter secure password" required autocomplete="current-password">
+      </div>
+      <button type="submit" id="loginBtn" class="btn btn-primary" style="width: 100%; margin-top: 1rem; height: 50px;">
+        Sign In
+      </button>
+    </form>
+  </div>
+
+  <!-- Load Toast notifications helper -->
+  <script src="/js/toast.js"></script>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const loginBtn = document.getElementById('loginBtn');
+      
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      
+      if (!username || !password) {
+        return window.toast.warning('Please enter both username and password.');
+      }
+      
+      // Update UI to loading state
+      loginBtn.disabled = true;
+      const originalText = loginBtn.textContent;
+      loginBtn.innerHTML = '<span style="display:inline-block; width:20px; height:20px; border:2px solid #fff; border-radius:50%; border-top-color:transparent; animation:spin 0.8s linear infinite; margin-right:8px;"></span> Signing In...';
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          window.toast.success('Successfully logged in! Redirecting...');
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1000);
+        } else {
+          window.toast.error(data.message || 'Login failed. Invalid username or password.');
+          loginBtn.disabled = false;
+          loginBtn.textContent = originalText;
+        }
+      } catch (err) {
+        console.error('Authentication request error:', err);
+        window.toast.error('Unable to reach server. Please check your internet connection.');
+        loginBtn.disabled = false;
+        loginBtn.textContent = originalText;
+      }
+    });
+  </script>
+
+  <!-- Global Spin Animation Style for Loading Button -->
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>

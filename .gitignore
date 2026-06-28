@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local SQLite Database
+# (Important: Do not commit the local database as it contains your sales and admin credentials)
+database.sqlite
+database.sqlite-journal
+
+# Vercel Serverless
+.vercel/
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
