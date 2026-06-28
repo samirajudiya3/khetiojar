@@ -64,8 +64,8 @@ app.get('*', (req, res, next) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Listen locally if running standalone server outside Vercel
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// Listen if running standalone server outside Vercel (e.g. Render, Local)
+if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server started on local address: http://localhost:${PORT}`);
